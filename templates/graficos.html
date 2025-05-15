@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block title %}Gráficos{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Gráficos</h2>
+
+<canvas id="grafico1" width="400" height="200"></canvas>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const ctx = document.getElementById('grafico1').getContext('2d');
+    const grafico = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Curso 1', 'Curso 2', 'Curso 3'],
+            datasets: [{
+                label: 'Quantidade de Alunos',
+                data: [12, 19, 7],
+                backgroundColor: ['#007bff', '#28a745', '#ffc107']
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

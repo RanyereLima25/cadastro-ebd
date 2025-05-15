@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block title %}Visualizar Cadastros{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Lista de Cadastros</h2>
+
+<table class="table table-bordered table-striped">
+    <thead class="table-primary">
+        <tr>
+            <th>Nome</th>
+            <th>CPF</th>
+            <th>Curso</th>
+            <th>Email</th>
+            <th>Telefone</th>
+            <th>Ações</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for pessoa in pessoas %}
+        <tr>
+            <td>{{ pessoa.nome }}</td>
+            <td>{{ pessoa.cpf }}</td>
+            <td>{{ pessoa.curso }}</td>
+            <td>{{ pessoa.email }}</td>
+            <td>{{ pessoa.telefone }}</td>
+            <td>
+                <a class="btn btn-sm btn-warning" href="/editar/{{ pessoa.id }}">Editar</a>
+                <a class="btn btn-sm btn-danger" href="/excluir/{{ pessoa.id }}" onclick="return confirm('Tem certeza?')">Excluir</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
