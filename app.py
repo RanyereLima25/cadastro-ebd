@@ -34,8 +34,11 @@ def index():
 
 @app.route('/visualizar')
 def visualizar():
-    pessoas = Pessoa.query.all()
-    return render_template('visualizar.html', pessoas=pessoas)
+    try:
+        pessoas = Pessoa.query.all()
+        return render_template('visualizar.html', pessoas=pessoas)
+    except Exception as e:
+        return f"Ocorreu um erro ao carregar os dados: {e}"
 
 @app.route('/excluir/<int:id>')
 def excluir(id):
