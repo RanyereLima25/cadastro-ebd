@@ -4,7 +4,7 @@ numpy==1.26.4
 openpyxl==3.1.2
 xlsxwriter==3.2.0
 sqlalchemy==2.0.30
-rich==14.0.0
+rich==13.7.1
 markdown-it-py==3.0.0
 mdurl==0.1.2
 pygments==2.19.1
