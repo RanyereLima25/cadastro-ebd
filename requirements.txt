@@ -4,3 +4,6 @@ SQLAlchemy
 psycopg2-binary
 qrcode
 reportlab
+flask
+flask_sqlalchemy
+werkzeug
