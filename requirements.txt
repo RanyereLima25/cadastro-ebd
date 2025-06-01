@@ -7,3 +7,4 @@ reportlab
 flask
 flask_sqlalchemy
 werkzeug
+gunicorn
