@@ -1,3 +1,4 @@
+import os
 from flask import Flask, render_template, redirect, url_for, request, session, flash
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -5,14 +6,12 @@ from functools import wraps
 from collections import defaultdict
 from datetime import datetime
 import pytz
-import os
 
-# =============================
-# CONFIGURAÇÃO DO FLASK E SUPABASE
-# =============================
 app = Flask(__name__)
 
-
+# =============================
+# CONFIGURAÇÃO DO BANCO
+# =============================
 DATABASE_URL = os.environ.get("DATABASE_URL") or "postgresql://postgres:CADASTRO-EBD@db.snkyiyiojwseanmxuouo.supabase.co:5432/postgres"
 
 app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
@@ -24,26 +23,11 @@ db = SQLAlchemy(app)
 # =============================
 # MODELOS
 # =============================
-class Usuario(db.Model):
-    __tablename__ = 'usuario'
-    id = db.Column(db.Integer, primary_key=True)
-    login = db.Column(db.String(150), unique=True, nullable=False)
-    senha_hash = db.Column(db.String(256), nullable=False)
-    ultimo_login = db.Column(db.DateTime, nullable=True)
-
-    def set_senha(self, senha):
-        self.senha_hash = generate_password_hash(senha)
-
-    def checar_senha(self, senha):
-        return check_password_hash(self.senha_hash, senha)
-
-
 class Pessoa(db.Model):
-    __tablename__ = 'pessoa'
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(100), nullable=False)
-    cpf = db.Column(db.String(20), unique=True, nullable=False)
-    nascimento = db.Column(db.Date)
+    cpf = db.Column(db.String(20), nullable=False, unique=True)
+    nascimento = db.Column(db.String(10))
     email = db.Column(db.String(100), nullable=False)
     telefone = db.Column(db.String(20), nullable=False)
     tipo = db.Column(db.String(20))
@@ -65,18 +49,30 @@ class Pessoa(db.Model):
     batizado = db.Column(db.String(100))
     profissao = db.Column(db.String(100))
 
+class Usuario(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    login = db.Column(db.String(150), unique=True, nullable=False)
+    senha_hash = db.Column(db.String(256), nullable=False)
+    ultimo_login = db.Column(db.DateTime, nullable=True)
+
+    def set_senha(self, senha):
+        self.senha_hash = generate_password_hash(senha)
+
+    def checar_senha(self, senha):
+        return check_password_hash(self.senha_hash, senha)
+
     @staticmethod
     def gerar_matricula():
         agora = datetime.now()
         ano = agora.year
-        mes = f"{agora.month:02d}"
+        mes = f'{agora.month:02d}'
         prefixo = f"{ano}.{mes}"
         ultimo = Pessoa.query.filter(Pessoa.matricula.like(f"{prefixo}.%")).count() + 1
         numero = f"{ultimo:04d}"
         return f"{prefixo}.{numero}"
 
 # =============================
-# DECORADORES
+# DECORADORES E FILTROS
 # =============================
 def login_required(f):
     @wraps(f)
@@ -87,20 +83,17 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-# =============================
-# FILTROS
-# =============================
 @app.template_filter('formatadata')
 def formatadata(value):
     if not value:
         return "-"
     try:
-        return value.strftime('%d/%m/%Y') if isinstance(value, datetime) else datetime.strptime(value, '%Y-%m-%d').strftime('%d/%m/%Y')
+        return datetime.strptime(value, '%Y-%m-%d').strftime('%d/%m/%Y')
     except Exception:
         return value
 
 # =============================
-# ROTAS SIMPLES
+# ROTAS
 # =============================
 @app.route('/')
 def index():
@@ -118,30 +111,83 @@ def login():
             db.session.commit()
             session['usuario_id'] = usuario.id
             flash('Login realizado com sucesso.')
-            return redirect(url_for('index'))
+            return redirect(url_for('visualizar'))
         else:
             flash('Login ou senha inválidos.')
     return render_template('login.html')
 
-# =============================
-# INICIALIZAÇÃO DO BANCO E USUARIO DE TESTE
-# =============================
-def init_db():
-    with app.app_context():
-        db.create_all()
-        # Cria usuário de teste inicial se não existir
-        if not Usuario.query.filter_by(login='admin').first():
-            admin = Usuario(login='admin')
-            admin.set_senha('123456')
-            db.session.add(admin)
+@app.route('/logout')
+def logout():
+    session.pop('usuario_id', None)
+    flash('Você saiu do sistema.')
+    return redirect(url_for('login'))
+
+@app.route('/registrar', methods=['GET', 'POST'])
+def registrar():
+    if request.method == 'POST':
+        login_form = request.form['login']
+        senha_form = request.form['senha']
+        if Usuario.query.filter_by(login=login_form).first():
+            flash('Usuário já existe.')
+        else:
+            novo_usuario = Usuario(login=login_form)
+            novo_usuario.set_senha(senha_form)
+            db.session.add(novo_usuario)
             db.session.commit()
-            print("Usuário inicial 'admin' criado com senha '123456'.")
+            flash('Usuário registrado com sucesso.')
+            return redirect(url_for('login'))
+    return render_template('registrar.html')
+
+@app.route('/cadastro', methods=['GET', 'POST'])
+@login_required
+def cadastro():
+    if request.method == 'POST':
+        dados = request.form.to_dict()
+        nascimento = dados.get('nascimento') or None
+        nova_pessoa = Pessoa(
+            nome=dados.get('nome'),
+            cpf=dados.get('cpf'),
+            nascimento=nascimento,
+            email=dados.get('email'),
+            telefone=dados.get('telefone'),
+            tipo=dados.get('tipo'),
+            matricula=Usuario.gerar_matricula(),
+            classe=dados.get('classe'),
+            sala=dados.get('sala'),
+            ano_ingresso=dados.get('ano_ingresso'),
+            cep=dados.get('cep'),
+            rua=dados.get('rua'),
+            numero=dados.get('numero'),
+            complemento=dados.get('complemento'),
+            bairro=dados.get('bairro'),
+            cidade=dados.get('cidade'),
+            estado=dados.get('estado'),
+            sexo=dados.get('sexo'),
+            escolaridade=dados.get('escolaridade'),
+            curso_teologia=dados.get('curso_teologia'),
+            curso_lider=dados.get('curso_lider'),
+            batizado=dados.get('batizado'),
+            profissao=dados.get('profissao_outro') or dados.get('profissao')
+        )
+        db.session.add(nova_pessoa)
+        db.session.commit()
+        flash('Cadastro realizado com sucesso.')
+        return redirect(url_for('visualizar'))
+
+    usuario_logado = Usuario.query.get(session['usuario_id']).login
+    return render_template('cadastro.html', usuario=usuario_logado)
+
+@app.route('/visualizar')
+@login_required
+def visualizar():
+    pessoas = Pessoa.query.order_by(Pessoa.classe, Pessoa.nome).all()
+    usuario_logado = Usuario.query.get(session['usuario_id']).login
+    return render_template('visualizar.html', pessoas=pessoas, total=len(pessoas), usuario=usuario_logado)
 
 # =============================
 # EXECUÇÃO
 # =============================
 if __name__ == '__main__':
-    init_db()
+    with app.app_context():
+        db.create_all()  # Cria tabelas no Supabase
     app.run(debug=True)
-
-
