@@ -12,8 +12,8 @@ import os
 # =============================
 app = Flask(__name__)
 
-# Substitua pelo link do seu novo Supabase
-DATABASE_URL = os.environ.get("DATABASE_URL") or "postgresql://<usuario>:<CADASTRO-EBD>@<host>:5432/<banco>"
+
+DATABASE_URL = os.environ.get("DATABASE_URL") or "postgresql://postgres:CADASTRO-EBD@db.snkyiyiojwseanmxuouo.supabase.co:5432/postgres"
 
 app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -143,4 +143,5 @@ def init_db():
 if __name__ == '__main__':
     init_db()
     app.run(debug=True)
+
 
