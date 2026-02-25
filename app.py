@@ -201,8 +201,6 @@ def visualizar():
 # EXECUÇÃO
 # =============================
 
-with app.app_context():
-    db.create_all()
-
 if __name__ == "__main__":
-    app.run()
+    port = int(os.environ.get("PORT", 5000))  # Render passa a porta via variável PORT
+    app.run(host="0.0.0.0", port=port)
