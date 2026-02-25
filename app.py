@@ -12,7 +12,11 @@ app = Flask(__name__)
 # =============================
 # CONFIGURAÇÃO DO BANCO
 # =============================
-DATABASE_URL = os.environ.get("DATABASE_URL") or "postgresql://postgres:CADASTRO-EBD@db.snkyiyiojwseanmxuouo.supabase.co:5432/postgres"
+
+DATABASE_URL = os.environ.get("DATABASE_URL")
+
+if not DATABASE_URL:
+    DATABASE_URL = "postgresql://postgres:cadastro-ebd@db.ehgvityantqpwpgdajbh.supabase.co:5432/postgres?sslmode=require"
 
 app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -23,6 +27,7 @@ db = SQLAlchemy(app)
 # =============================
 # MODELOS
 # =============================
+
 class Pessoa(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(100), nullable=False)
@@ -72,8 +77,9 @@ class Usuario(db.Model):
         return f"{prefixo}.{numero}"
 
 # =============================
-# DECORADORES E FILTROS
+# DECORADOR
 # =============================
+
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -82,6 +88,10 @@ def login_required(f):
             return redirect(url_for('login'))
         return f(*args, **kwargs)
     return decorated_function
+
+# =============================
+# FILTRO DATA
+# =============================
 
 @app.template_filter('formatadata')
 def formatadata(value):
@@ -95,6 +105,7 @@ def formatadata(value):
 # =============================
 # ROTAS
 # =============================
+
 @app.route('/')
 def index():
     return redirect(url_for('login'))
@@ -105,6 +116,7 @@ def login():
         login_form = request.form['login']
         senha_form = request.form['senha']
         usuario = Usuario.query.filter_by(login=login_form).first()
+
         if usuario and usuario.checar_senha(senha_form):
             tz = pytz.timezone("America/Sao_Paulo")
             usuario.ultimo_login = datetime.now(tz)
@@ -114,6 +126,7 @@ def login():
             return redirect(url_for('visualizar'))
         else:
             flash('Login ou senha inválidos.')
+
     return render_template('login.html')
 
 @app.route('/logout')
@@ -127,6 +140,7 @@ def registrar():
     if request.method == 'POST':
         login_form = request.form['login']
         senha_form = request.form['senha']
+
         if Usuario.query.filter_by(login=login_form).first():
             flash('Usuário já existe.')
         else:
@@ -136,6 +150,7 @@ def registrar():
             db.session.commit()
             flash('Usuário registrado com sucesso.')
             return redirect(url_for('login'))
+
     return render_template('registrar.html')
 
 @app.route('/cadastro', methods=['GET', 'POST'])
@@ -143,11 +158,11 @@ def registrar():
 def cadastro():
     if request.method == 'POST':
         dados = request.form.to_dict()
-        nascimento = dados.get('nascimento') or None
+
         nova_pessoa = Pessoa(
             nome=dados.get('nome'),
             cpf=dados.get('cpf'),
-            nascimento=nascimento,
+            nascimento=dados.get('nascimento') or None,
             email=dados.get('email'),
             telefone=dados.get('telefone'),
             tipo=dados.get('tipo'),
@@ -169,6 +184,7 @@ def cadastro():
             batizado=dados.get('batizado'),
             profissao=dados.get('profissao_outro') or dados.get('profissao')
         )
+
         db.session.add(nova_pessoa)
         db.session.commit()
         flash('Cadastro realizado com sucesso.')
@@ -187,6 +203,8 @@ def visualizar():
 # =============================
 # EXECUÇÃO
 # =============================
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
+    app.run()
