@@ -15,12 +15,9 @@ app = Flask(__name__)
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
-if not DATABASE_URL:
-    DATABASE_URL = "postgresql://postgres:cadastro-ebd@db.ehgvityantqpwpgdajbh.supabase.co:5432/postgres?sslmode=require"
-
-app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] = os.environ.get("SECRET_KEY", "ebd-secret-key")
+app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "ebd-secret-key")
 
 db = SQLAlchemy(app)
 
@@ -207,3 +204,4 @@ def visualizar():
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
+
